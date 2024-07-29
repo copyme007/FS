@@ -28,37 +28,50 @@
     </style>
 </head>
 <body>
-    <h1>Program 7: Split and Display Image into 4 Quadrants</h1>
+    <h1>MODULE 1</h1>
     <pre><code>
-import cv2
-import numpy as np
+------------------------------------program 1-----------------------------------------
+**views.py:**
 
+from django.http import HttpResponse
+from datetime import datetime
+def current_datetime(request):
+    now = datetime.now()
+    html = f"<html><body><h1>Current Date and Time:</h1><p>{now}</p></body></html>"
+    return HttpResponse(html)
 
-image_path = "image.jpg" 
-img = cv2.imread(image_path)
+**urls.py**
 
+from django.contrib import admin
+from django.urls import path
+from lab1.views import current_datetime
+urlpatterns = [
+path("admin/", admin.site.urls),
+path('current_datetime/', current_datetime, name='current_datetime'),
+]
 
-height, width, _ = img.shape
+---------------------------------------program 2---------------------------------------
+**views.py**
+from django.http import HttpResponse
+from datetime import datetime, timedelta
+def datetime_with_offsets(request):
+    now = datetime.now()
+    offset_hours = 4
+    # Calculate dates with offsets
+    four_hours_ahead = now + timedelta(hours=offset_hours)
+    four_hours_before = now - timedelta(hours=offset_hours)
+    html = f'<html><body><h1> Current Date and Time with Offsets:</h1><p> Current: {now}</p><p>Four Hours Ahead
+    {four_hours_ahead}</p><p>Four Hours Before: {four_hours_before}</p></body></html>'
+    return HttpResponse(html)
 
-
-up_left = img[0:height//2, 0:width//2]
-up_right = img[0:height//2, width//2:width]
-down_left = img[height//2:height, 0:width//2]
-down_right = img[height//2:height, width//2:width]
-
-
-canvas = np.zeros((height, width, 3), dtype=np.uint8)
-
-
-canvas[0:height//2, 0:width//2] = up_left
-canvas[0:height//2, width//2:width] = up_right
-canvas[height//2:height, 0:width//2] = down_left
-canvas[height//2:height, width//2:width] = down_right
-
-
-cv2.imshow("Image Quadrants", canvas)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+**urls.py**
+from django.contrib import admin
+from django.urls import path
+from lab1.views import datetime_with_offsets
+urlpatterns = [
+path("admin/", admin.site.urls),
+path('datetime_with_offsets/',datetime_with_offsets, name='datetime_with_offsets'),
+]
     </code></pre>
 </body>
 </html>
