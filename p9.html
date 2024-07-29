@@ -28,33 +28,435 @@
     </style>
 </head>
 <body>
-    <h1>Program 9: Extract and Display Low-Level Features</h1>
+    <h1>Programs: 7,8,9</h1>
     <pre><code>
-import cv2
-import numpy as np
+----------------------------------------program 7--------------------------------------
+models.py
+from django.db import models
+from django.forms import ModelForm
+from django.utils.functional import cached_property
+class Student(models.Model):
+    student_usn = models.CharField(max_length=20)
+    student_name = models.CharField(max_length=100)
+    student_sem = models.IntegerField()
+    enrolment = models.ManyToManyField('Course')
+    def str (self):
+        return f"{self.student_usn} - {self.student_name} - Semester: {self.student_sem} - Enrolled in: {self.enrolled_courses}"
+    @cached_property
+    def enrolled_courses(self):
+        return ", ".join(course.course_name for course in self.enrolment.all())
+class Course(models.Model):
+    course_code = models.CharField(max_length=40)
+    course_name = models.CharField(max_length=100)
+    course_credits = models.IntegerField()
+    def str (self):
+        return f"Course:{self.course_code.upper()}-{self.course_name}-{self.course_credits}"
+class ProjectReg(ModelForm):
+    required_css_class="required"
+    class Meta:
+        model = Student
+        fields=['student_usn', 'student_name', 'student_sem', 'enrolment']
+class Project(models.Model):
+    student=models.ForeignKey(Student, on_delete=models.CASCADE)
+    ptopic=models.CharField(max_length=20)
+    planguages=models.CharField(max_length=200)
+    pduration=models.IntegerField()
+    def str (self):
+        return f"{self.student} - {self.ptopic} - {self.planguages} - {self.pduration}"
+class ProjectRegistration(ModelForm):
+    required_css_class="required"
+    class Meta:
+        model = Project
+        fields=['student', 'ptopic', 'planguages', 'pduration']
+
+admin.py
+from django.contrib import admin
+from .models import Course, Project, Student
+admin.site.register(Project)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ('course_name', 'course_code', 'course_credits')
+admin.site.register(Course, MemberAdmin)
+class MyAdmin(admin.ModelAdmin):
+    list_display = ('student_name', 'student_usn', 'student_sem')
+admin.site.register(Student, MyAdmin)
+
+index.html
+|!DOCTYPE html|
+|html|
+|head|
+|title|Project Registration|/title|
+|/head|
+|body|
+|h1|Register a Project|/h1|
+|form method="post"|
+{% csrf_token %}
+{{ form.as_p }}
+|button type="submit"|Submit|/button|
+|/form|
+|/body|
+|/html|
+
+t2.html
+|!DOCTYPE html|
+|html|
+|head|
+|title|Course Registration|/title|
+|/head|
+|body|
+|h1|Register for a Course|/h1|
+|form method="post"|
+{% csrf_token %}
+Student Name:
+|select name="sname"|
+{% for student in students %}
+|option value="{{ student.id }}"|{{ student.student_name }}|/option|
+{% endfor %}
+|/select|
+|br|
+Course Name:
+|select name="cname"|
+{% for course in courses %}
+|option value="{{ course.id }}"|{{ course.course_name }}|/option|
+{% endfor %}
+|/select|
+|br|
+|button type="submit"|Submit|/button|
+|/form|
+|/body|
+|/html|
+
+views.py
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from .models import Course, Student, ProjectReg, ProjectRegistration
+def reg(request):
+    if request.method == "POST":
+        sid = request.POST.get('sname')
+        cid = request.POST.get('cname')
+        student = Student.objects.get(id=sid)
+        course = Course.objects.get(id=cid)
+        res = student.enrolment.filter(id=cid)
+        if res.exists():
+            return HttpResponse("<h1>Student already enrolled</h1>")
+        student.enrolment.add(course)
+        return HttpResponse("<h1>Student enrolled successfully</h1>")
+    else:
+        students = Student.objects.all()
+        courses = Course.objects.all()
+        return render(request, "t2.html", {"students": students, "courses": courses})
+def add_project(request):
+    if request.method == 'POST':
+        form = ProjectReg(request.POST)
+        if form.is_valid():
+            form.save()
+            return HttpResponse("<h1>Record inserted successfully</h1>")
+        else:
+            return HttpResponse("<h1>Record not inserted</h1>")
+    else:
+        form = ProjectReg()
+    return render(request, "index.html", {"form": form})
+def add_project1(request):
+    if request.method == "POST":
+        form = ProjectRegistration(request.POST)
+        if form.is_valid():
+            form.save()
+            return HttpResponse("<h1>Record inserted successfully</h1>")
+        else:
+            return HttpResponse("<h1>Record not inserted</h1>")
+    else:
+        form = ProjectRegistration()
+    return render(request, "index.html", {"form": form})
+
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.views import reg, add_project, add_project1
+urlpatterns = [
+path("admin/", admin.site.urls),
+path("reg/", reg),
+path("add_project/", add_project),
+path("projectreg/", add_project1)
+]
+
+---------------------------------program 8---------------------------------------------------------
+models.py
+from django.db import models
+from django.urls import reverse
+class Course(models.Model):
+    course_code = models.CharField(max_length=40)
+    course_name = models.CharField(max_length=100)
+    course_credits = models.IntegerField()
+    def str (self):
+        return f"Course:{self.course_code.upper()}-{self.course_name}-{self.course_credits}"
+class Student(models.Model):
+    student_usn = models.CharField(max_length=20)
+    student_name = models.CharField(max_length=100)
+    student_sem = models.IntegerField()
+    enrolment = models.ManyToManyField(Course)
+    def str (self):
+        return f"{self.student_usn} - {self.student_name}"
+    def get_absolute_url(self):
+        return reverse('student-detail', args=[str(self.id)])
+
+admin.py
+from django.contrib import admin
+from .models import Course, Project, Student
+admin.site.register(Project)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ('course_name', 'course_code', 'course_credits')
+admin.site.register(Course, MemberAdmin)
+class MyAdmin(admin.ModelAdmin):
+    list_display = ('student_name', 'student_usn', 'student_sem')
+admin.site.register(Student, MyAdmin)
+
+views.py
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from .models import Course, Student, ProjectReg, ProjectRegistration
+from django.views.generic import ListView, DetailView
+def reg(request):
+    if request.method == "POST":
+        sid = request.POST.get('sname')
+        cid = request.POST.get('cname')
+        student = Student.objects.get(id=sid)
+        course = Course.objects.get(id=cid)
+        res = student.enrolment.filter(id=cid)
+        if res.exists():
+            return HttpResponse("<h1>Student already enrolled</h1>")
+        student.enrolment.add(course)
+        return HttpResponse("<h1>Student enrolled successfully</h1>")
+    else:
+        students = Student.objects.all()
+        courses = Course.objects.all()
+        return render(request, "t2.html", {"students": students, "courses": courses})
+class StudentListView(ListView):
+    model = Student
+    template_name = 'student_list.html'
+    context_object_name = 'students'
+class StudentDetailView(DetailView):
+    model = Student
+    template_name = 'student_detail.html'
+    context_object_name = 'student'
 
 
-image_path = "image/atc.jpg" 
-img = cv2.imread(image_path)
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.viewsimport StudentListView, StudentDetailView, reg
+urlpatterns = [
+path("admin/", admin.site.urls),
+path("reg/", reg),
+path('students/', StudentListView.as_view(), name='student-list'),
+path('students/<int:pk>/', StudentDetailView.as_view(), name='student-detail'),
+]
 
+student_list.html
+|!DOCTYPE html|
+|html lang="en"|
+|head|
+|meta charset="UTF-8"|
+|meta name="viewport" content="width=device-width, initial-scale=1.0"|
+|title|Student List|/title|
+|style|
+    body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    }
+    h1 {
+    color: #333;
+    text-align: center;
+    }
+    .student-list {
+    list-style-type: none;
+    padding: 0;
+    }
+    .student-item {
+    background-color: #fff;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .student-item a {
+    color: #007bff;
+    text-decoration: none;
+    }
+    .student-item a:hover {
+    text-decoration: underline;
+    }
+    .no-students {
+    text-align: center;
+    color: #666;
+    }
+    |/style|
+    |/head|
+    |body|
+    |h1|Student List|/h1|
+    |ul class="student-list"|
+    {% for student in students %}
+    |li class="student-item"|
+    |a href="{% url 'student-detail' student.pk %}"|
+    {{ student.student_name }} (USN: {{ student.student_usn }})
+    |/a|
+    |/li|
+    {% empty %}
+    |li class="no-students"|No students found.|/li|
+    {% endfor %}
+    |/ul|
+    |/body|
+    |/html|
 
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+student_detail.html
+|!DOCTYPE html|
+|html lang="en"|
+|head|
+|meta charset="UTF-8"|
+|meta name="viewport" content="width=device-width, initial-scale=1.0"|
+|title|Student Detail - {{ student.student_name }}|/title|
+|style|
+body {
+font-family: Arial, sans-serif;
+line-height: 1.6;
+margin: 0;
+padding: 20px;
+background-color: #f4f4f4;
+}
+.container {
+max-width: 800px;
+margin: auto;
+background: #fff;
+padding: 20px;
+border-radius: 5px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+h1, h2 {
+color: #333;
+}
+.student-info p {
+margin: 10px 0;
+}
+.course-list {
+list-style-type: none;
+padding: 0;
+}
+.course-item {
+background-color: #f8f9fa;
+margin-bottom: 5px;
+padding: 10px;
+border-radius: 3px;
+}
+.back-link {
+display: inline-block;
+margin-top: 20px;
+color: #007bff;
+text-decoration: none;
+}
+.back-link:hover {
+text-decoration: underline;
+}
+|/style|
+|/head|
+|body|
+|div class="container"|
+|h1|Student Details|/h1|
+|div class="student-info"|
+|h2|{{ student.student_name }}|/h2|
+|p||strong|USN:|/strong| {{ student.student_usn }}|/p|
+|p||strong|Semester:|/strong| {{ student.student_sem }}|/p|
+|/div|
+|h3|Enrolled Courses:|/h3|
+|ul class="course-list"|
+{% for course in student.enrolment.all %}
+|li class="course-item"|{{ course.course_name }} ({{ course.course_code }})|/li|
+{% empty %}
+|li|No courses enrolled.|/li|
+{% endfor %}
+|/ul|
+|a href="{% url 'student-list' %}" class="back-link"|Back to Student List|/a|
+|/div|
+|/body|
+|/html|
 
+--------------------------------------program 9----------------------------------------------------------------
+models.py
+from django.db import models
+class Course(models.Model):
+    course_name = models.CharField(max_length=100) # Adjust max_length as needed
+    course_code = models.CharField(max_length=20) # Adjust max_length as needed
+    course_credits = models.IntegerField()
+    def str (self):
+        return self.course_name
+# The Student model is referenced in the original code but not used in CSV generation
+# Including it here for completeness based on the information we have
+class Student(models.Model):
+    student_name = models.CharField(max_length=100) # Adjust max_length as needed
+    student_usn = models.CharField(max_length=20) # Adjust max_length as needed
+    student_sem = models.IntegerField()
+    enrolment = models.ManyToManyField(Course) # Assuming many-to-many relationship with Course
+    def str (self):
+        return self.student_name
 
-edges = cv2.Canny(gray, 100, 200) 
+admin.py
+from django.contrib import admin
+from .models import Course, Student
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ('course_name', 'course_code', 'course_credits')
+admin.site.register(Course, MemberAdmin)
+class MyAdmin(admin.ModelAdmin):
+    list_display = ('student_name', 'student_usn', 'student_sem')
+admin.site.register(Student, MyAdmin) 
 
+views.py
+from django.views import generic
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizesimport letter
+from django.http import HttpResponse
+from .models import Student, Course
+import csv
+def construct_csv_from_model(request):
+    courses = Course.objects.all()
+    response = HttpResponse(content_type="text/csv")
+    response['Content-Disposition'] = 'attachment; filename="courses_data.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Course Name", "Course Code", "Credits"])
+    for course in courses:
+        writer.writerow([course.course_name, course.course_code, course.course_credits])
+    return response
+def generate_pdf_from_model(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="courses_data.pdf"'
+    p = canvas.Canvas(response, pagesize=letter)
+    p.setFont("Helvetica", 12)
+    y = 750 # Starting y position
+    p.drawString(100, y, "Course Name")
+    p.drawString(250, y, "Course Code")
+    p.drawString(400, y, "Credits")
+    y -= 20
+    courses = Course.objects.all()
+    for course in courses:
+        p.drawString(100, y, course.course_name)
+        p.drawString(250, y, course.course_code)
+        p.drawString(400, y, str(course.course_credits))
+        y -= 20
+        if y < 50: # Start a new page if we're near the bottom
+            p.showPage()
+            y = 750
+    p.showPage()
+    p.save()
+    return response
 
-kernel = np.ones((5, 5), np.float32) / 25 
-texture = cv2.filter2D(gray, -1, kernel) 
-
-
-cv2.imshow("Original Image", img)
-cv2.imshow("Edges", edges)
-cv2.imshow("Texture", texture)
-
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.viewsimport construct_csv_from_model, generate_pdf_from_model
+urlpatterns = [
+path("admin/", admin.site.urls),
+path('csv/', construct_csv_from_model),
+path('pdf/', generate_pdf_from_model),
+]
     </code></pre>
 </body>
 </html>
