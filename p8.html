@@ -28,37 +28,199 @@
     </style>
 </head>
 <body>
-    <h1>Program 8: Rotation, Scaling, and Translation on an Image</h1>
+    <h1>MODULE 2</h1>
     <pre><code>
-import cv2
-import numpy as np
+---------------------------------------program 3----------------------------------------
+**views.py**
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template import Context, Template
+    def showlist(request):
+    fruits = ['Mango', 'Grapes', 'Apple', 'Pineapple', 'Tangerine']
+    student_names = ['Emily Johnson', 'Michael Smith', 'Sophia Martinez', 'Daniel Lee']
+    return render(request, 'index.html', {'fruits':fruits, 'student_names':student_names})
+        
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.views import showlist
+urlpatterns = [
+path("admin/", admin.site.urls),
+path('showlist/', showlist)
+]
+        
+**HTML**
+|html|
+|style type="text/css"|
+#i1 {
+background-color: lightgreen;
+color: brown;
+display: table;
+}
+#i2{
+background-color: black;
+color: aqua;
+display: table;
+}
+|/style|
+|body|
+|h1 id="i1"|Unordered list of fruits|/h1|
+|ul|
+{% for fruit in fruits %}
+|li|{{ fruit }}|/li|
+-------------------------------------program 4-----------------------------------
+views.py
+from django.shortcuts import render
+def home(request):
+    return render(request, 'home.html')
+def about(request):
+    return render(request, 'about.html')
+def contact(request):
+    return render(request, 'contact.html')
 
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.views import about, contact, home
+urlpatterns = [
+path("admin/", admin.site.urls),
+path('about/', about),
+path('home/', home),
+path('contact/', contact),
+]
 
-image_path = "image.jpg" 
-img = cv2.imread(image_path)
+**HTML**
+layouts.html
+|html|
+|title|{%block title%}{% endblock %}|/title|
+|style type="text/css"|
+nav{
+background-color: lightblue;
+padding: 10px;
+}
+|/style|
+|body|
+|nav|
+|a href="/home/"|Home|/a|
+|a href="/about/"|About Us|/a|
+|a href="/contact/"|Contact Us|/a|
+|/nav|
+|section|
+{% block content %}{% endblock %}
+|/section|
+|footer|
+|br||hr|
+&copy;CSE, Developed by CSE RVITM
+|/footer|
+|/body|
+|/html|
 
+{% extends 'layouts.html' %}
+{% block title %}Home{% endblock %}
+{% block content %}
+|h2|This is the home page|/h2|
+{% endblock %}
 
-height, width, _ = img.shape
+{% extends 'layouts.html' %}
+{% block title %}About Us{% endblock %}
+{% block content %}
+|h2|We are Django developers|/h2|
+{% endblock %}
 
+{% extends 'layouts.html' %}
+{% block title %}Contact Us{% endblock %}
+{% block content %}
+|h2|
+Phone: 987654321
+|br|
+Address: Bengaluru, Karnataka
+|/h2|
+{% endblock %}
 
-rotation_matrix = cv2.getRotationMatrix2D((width/2, height/2), 45, 1) 
-scaling_matrix = np.float32([[1.5, 0, 0], [0, 1.5, 0]]) 
-translation_matrix = np.float32([[1, 0, 100], [0, 1, 50]]) 
+---------------------------program 5-----------------------------
+models.py
+from django.db import models
+class Course(models.Model):
+    course_code = models.CharField(max_length=40)
+    course_name = models.CharField(max_length=100)
+    course_credits = models.IntegerField()
+class Student(models.Model):
+    student_usn = models.CharField(max_length=20)
+    student_name = models.CharField(max_length=100)
+    student_sem = models.IntegerField()
+    enrolment = models.ManyToManyField(Course)
 
+admin.py
+from django.contrib import admin
+from lab1.models import Course, Student
+admin.site.register(Course)
+admin.site.register(Student)
 
-rotated_img = cv2.warpAffine(img, rotation_matrix, (width, height))
-scaled_img = cv2.warpAffine(img, scaling_matrix, (int(width*1.5), int(height*1.5)))
-translated_img = cv2.warpAffine(img, translation_matrix, (width, height))
+index.html
+|html|
+|body|
+|form method="post" action=""|
+{% csrf_token %}
+Student Name
+|select name="sname"|
+{% for student in students %}
+|option value="{{student.id}}"|{{student.student_name}}|/option|
+{% endfor %}
+|/select||br|
+|br|
+Course name
+|select name="cname"|
+{% for course in courses %}
+|option value="{{course.id}}"|{{course.course_name}}|/option|
+{% endfor %}
+|/select||br|
+|input type="submit" value="Enroll"|
+|/form|
+|/body|
+|/html|
 
+views.py
+from django.shortcuts import render
+from django.http import HttpResponse
+from .models import Course, Student
+def reg(request):
+    if request.method == "POST":
+        sid = request.POST.get('sname')
+        cid = request.POST.get('cname')
+        student = Student.objects.get(id=sid)
+        course = Course.objects.get(id=cid)
+        res = student.enrolment.filter(id=cid)
+        if res:
+            return HttpResponse("<h1>Student already enrolled</h1>")
+        student.enrolment.add(course)
+        return HttpResponse("<h1> Student enrolled successfully</h1>")
+    else:
+        students = Student.objects.all()
+        courses = Course.objects.all()
+        return render(request, "index.html", {"students":students, "courses":courses})
+urls.py
+from django.contrib import admin
+from django.urls import path
+from lab1.views import reg
+urlpatterns = [
+path("admin/", admin.site.urls),
+path("reg/", reg),
+]
 
-cv2.imshow("Original Image", img)
-cv2.imshow("Rotated Image", rotated_img)
-cv2.imshow("Scaled Image", scaled_img)
-cv2.imshow("Translated Image", translated_img)
+migrations:
+python manage.py makemigrations
+lab1 python manage.py migrate
+python manage.py sqlmigrate lab1 0001
 
+insert records:
+python manage.py shell
+from lab1.models import Student, Course
+s1 = Student(student_usn='1rf21cs074', student_name='Pavan Kumar V', student_sem=6)
+s1.save()
+cs01 = Course.objects.get(course_code='cs01')
+s1.enrolment.add(cs01)
+print(s1.enrolment.all())
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
     </code></pre>
 </body>
 </html>
