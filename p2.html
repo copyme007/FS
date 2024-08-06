@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program 9 - Image Feature Extraction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Programs: 7,8,9</h1>
+    <pre><code>
+import turtle
+import math
+
+screen=turtle.Screen()
+screen.bgcolor("black")
+
+t=turtle.Turtle()
+t.speed(10)
+t.pensize(2)
+def draw_rect(x,y,w,h,c):
+    t.penup()
+    t.goto(x,y)
+    t.pendown()
+    t.color(c)
+    for _ in range(2):
+        t.forward(w)
+        t.left(90)
+        t.forward(h)
+        t.left(90)
+
+def draw_cir(x,y,r,c):
+    t.penup()
+    t.goto(x,y)
+    t.pendown()
+    t.color(c)
+    t.circle(r)
+
+def translate(x,y,dx,dy):
+    t.penup()
+    t.goto(x+dx,y+dy)
+    t.pendown()
+
+def rotate(x,y,angle):
+    t.penup()
+    t.goto(x,y)
+    t.setheading(angle)
+    t.pendown()
+
+def scale(x,y,sx,sy):
+    t.penup()
+    t.goto(x*sx,y*sy)
+    t.pendown()
+
+draw_rect(-200,0,100,50,"blue")
+translate(-200,0,200,0)
+draw_rect(0,0,100,50,"green")
+scale(0,0,2,2)
+draw_rect(-100,100,200,100,"green")
+rotate(0,0,45)
+draw_rect(0,0,100,50,"green")
+
+draw_cir(100,100,50,"red")
+translate(100,100,200,0)
+draw_cir(300,100,50,"black")
+rotate(300,100,45)
+draw_cir(300,100,50,"white")
+scale(0,0,2,2)
+draw_cir(600,200,50,"black")
+
+turtle.done()
+
+    </code></pre>
+</body>
+</html>
